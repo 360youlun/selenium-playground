@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+{% block body%}
+    <ul id='user'>
+      <li class='user-name'`>name, {{ user.get('name') }}</li>
+      <li class='user-marriage'>marriage, {{ user.get('marriage') }}</li>
+      <li class='user-gender'>gender, {{ user.get('gender') }}</li>
+      <li class='user-from'>from, {{ user.get('from') }}</li>
+      <li class='user-intro'>self intro, {{ user.get('self_intro') }}</li>
+    </ul>
+{% endblock %}

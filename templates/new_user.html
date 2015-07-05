@@ -1,0 +1,41 @@
+{% extends 'layout.html' %}
+{% block body %}
+  <form id='form' action='/users/show' method='get'>
+    <input class='input' type='hidden' value='je8320jf2333203jjrrr2'/>
+    <p class='input'>
+      <h3>input text</h3>
+      <label>name</label>
+      <input id='name' type='text' name='name'/>
+    </p>
+    <p class='input'>
+      <h3>input checkbox</h3>
+      <label>marriage</label>
+      <input id='marriage' type='checkbox' name='marriage' value='yes'/>
+    </p>
+    <p class='input'>
+      <h3>input radio</h3>
+      <label>man</label>
+      <input id='man' type='radio' name='gender' value='man'/>
+      <label>woman</label>
+      <input id='woman' type='radio' name='gender' value='woman' checked='checked'/>
+    </p>
+    <p class='input'>
+      <h3>select</h3>
+      <label>from</label>
+      <select id='from' name='from'>
+        <option value='heilongjiang'>heilongjiang</option>
+        <option value='hebei' selected='selected'>hebei</option>
+        <option value='xinjiang'>xinjiang</option>
+      </select>
+    </p>
+    <p class='input'>
+      <h3>textarea</h3>
+      <label>self intro</label>
+      <textarea id='self-intro' name='self_intro'></textarea>
+    </p>
+    <p class='input'>
+      <h3>input submit</h3>
+      <input type='submit' name='sub'/>
+    </p>
+  </form>
+{% endblock %}

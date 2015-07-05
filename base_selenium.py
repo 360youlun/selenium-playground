@@ -259,7 +259,7 @@ class Browser(object):
         """
         if hasattr(self, 'browser') and self.browser:
             self.close()
-        self.browser = WebDriverSingleton().browser
+        self.browser = webdriver.Firefox()
         self.browser.maximize_window()
 
     def close(self):
