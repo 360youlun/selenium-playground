@@ -1,9 +1,16 @@
-# coding=utf-8
+#-*- coding: utf-8 -*-
 
+"""
+Selenium related base class.
+"""
+
+import unittest
 from selenium import webdriver
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.wait import WebDriverWait
+
+import config
 
 
 class Browser(object):
@@ -11,7 +18,33 @@ class Browser(object):
     Browser integrates methods of Selenium to make interaction with browser easier.
     """
     def __init__(self):
-        self.browser = webdriver.Firefox()
+       self.browser = self.__class__.web_driver_singleton()
+
+    def open(self):
+        """
+        close the current running browser,
+        and open a new one.
+        """
+        if hasattr(self, 'browser') and self.browser:
+            self.close()
+        self.browser = self.__class__.web_driver_singleton()
+
+    def close(self):
+        """
+        close the current running browser.
+        """
+        if self.browser:
+            self.browser.quit()
+            self.browser = None
+
+    def get(self, url):
+        """
+        make a get request
+        """
+        self.browser.get(url)
+
+    def current_url(self):
+        return self.browser.current_url
 
     def wait_for_css_selector(self, selector):
         """
@@ -20,7 +53,7 @@ class Browser(object):
         :param webdriver: Selenium webdriver
         :param selector: Specified CSS selector
         """
-        WebDriverWait(self.browser, 40).until(
+        WebDriverWait(self.browser, config.SELENIUM_WAIT_TIMEOUT).until(
             lambda driver: len(driver.find_elements_by_css_selector(selector)),
             "URL: %s | Waiting for %s, but didn't show up in time" % (
                 self.browser.current_url, selector
@@ -39,40 +72,10 @@ class Browser(object):
             elements = filter(lambda e: e.is_displayed() and e.is_enabled(), elements)
             return elements
 
-        WebDriverWait(self.browser, 40).until(
+        WebDriverWait(self.browser, config.SELENIUM_WAIT_TIMEOUT).until(
             selector_is_displayed_and_enabled,
             "URL: %s | Waiting for %s, but didn't show up in time" % (
                 self.browser.current_url, selector
-            )
-        )
-
-    def wait_until_xpath_exists(self, xpath):
-        """
-        waint until xpath element exists
-        :param webdriver: Selenium webdriver
-        :param xpath: xpath selector
-        """
-        WebDriverWait(self.browser, 40).until(
-            lambda driver: len(driver.find_element_by_xpath(xpath)),
-            "URL: %s | Waiting for %s, but didn't show up in time" % (
-                self.browser.current_url, xpath
-            )
-        )
-
-    def wait_until_xpath_selector_is_displayed(self, xpath):
-        """
-        wait until xpath element is displayed
-        :param webdriver: Selenium webdriver
-        :param xpath: xpath selector
-        """
-        def selector_is_exist_and_active(driver):
-            elements = driver.find_element_by_xpath(xpath)
-            return elements and elements.is_displayed()
-
-        WebDriverWait(self.browser, 40).until(
-            selector_is_exist_and_active,
-            "URL: %s | Waiting for %s, but didn't show up in time" % (
-                self.browser.current_url, xpath
             )
         )
 
@@ -81,31 +84,12 @@ class Browser(object):
         Wait until func returns True
         :param func: a lambda or function
         """
-        WebDriverWait(self.browser, 40).until(
+        WebDriverWait(self.browser, config.SELENIUM_WAIT_TIMEOUT).until(
             func,
             "URL: %s | fails to wait." % (self.browser.current_url)
         )
 
-    def assert_elements_exist(self, selectors):
-        """
-        Asserts if elements exist in DOM.
-        :param selectors: a list of CSS selectors.
-        """
-        for selector in selectors:
-            elements = self.browser.find_elements_by_css_selector(selector)
-            self.assertGreater(len(elements), 0, "Element %s does not exists!" % selector)
-
-    def set_select_element_value(self, el, index):
-        """
-        set select element index children selected attribute
-        """
-        self.browser.execute_script('''
-            var el = arguments[0];
-            var index = arguments[1];
-            el.children[index].setAttribute('selected', 'selected');
-        ''', el, index)
-
-    def set_input_element_value(self, el, value):
+    def set_input_value(self, el, value):
         """
         use script to set element value
         """
@@ -157,12 +141,6 @@ class Browser(object):
         self.browser.execute_script('''
             arguments[0].insertAdjacentHTML('beforeend', arguments[1]);
         ''', element, html)
-
-    def get(self, url):
-        """
-        run a get request
-        """
-        self.browser.get(url)
 
     def find_element(self, selector):
         """
@@ -243,7 +221,7 @@ class Browser(object):
         Wait for an alert to pop up, and accept the alert.
         :return: the text on the alert panel.
         """
-        WebDriverWait(self.browser, 40).until(
+        WebDriverWait(self.browser, config.SELENIUM_WAIT_TIMEOUT).until(
             lambda b: expected_conditions.alert_is_present(),
             'fails to wait for alert'
         )
@@ -252,27 +230,34 @@ class Browser(object):
         alert.accept()
         return text
 
-    def open(self):
-        """
-        close the current running browser,
-        and open a new one.
-        """
-        if hasattr(self, 'browser') and self.browser:
-            self.close()
-        self.browser = webdriver.Firefox()
-        self.browser.maximize_window()
-
-    def close(self):
-        """
-        close the current running browser.
-        """
-        if self.browser:
-            self.browser.quit()
-            self.browser = None
-
-    def current_url(self):
-        return self.browser.current_url
-
     def is_displayed(self, selector):
         element = self.browser.find_element_by_css_selector(selector)
         return element.is_displayed()
+   
+    @classmethod
+    def web_driver_singleton(cls):
+        user_agent = config.BROWSER_USER_AGENT
+        profile = webdriver.FirefoxProfile()
+        profile.set_preference("general.useragent.override", user_agent)
+        profile.set_preference('browser.cache.memory.enable', True)
+        profile.set_preference('browser.cache.disk.enable', True)
+        profile.set_preference('browser.cache.offline.enable', True)
+        profile.set_preference('network.http.use-cache', True)
+        profile.set_preference('browser.cache.disk.parent_directory', '/tmp')
+        browser = webdriver.Firefox(profile)
+        browser.desired_capabilities["applicationCacheEnabled"] = True
+        browser.set_window_size(1024, 768)
+        return browser
+
+class SeleniumTestCase(unittest.TestCase, Browser):
+    """
+    Base class for our selenium test cases, providing the browser instance.
+    """
+
+    def setUp(self):
+        self.browser = Browser.web_driver_singleton()
+        unittest.TestCase.setUp(self)
+
+    def tearDown(self):
+        self.browser.close()
+        unittest.TestCase.tearDown(self)
